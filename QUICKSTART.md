@@ -160,27 +160,48 @@ The hostname is the **bare domain name only** — no port, no database name, no 
 > **"Create connection error: The request was invalid"** — this error in dbt Cloud almost always
 > means the Host field contains the port (`:5439`) or the database (`/dev`). Strip both.
 
+### Check your dbt Cloud region IPs first
+
+Before filling in the form, note the IPs shown in the Settings section of the connection page —
+dbt Cloud displays the exact IPs it will connect from (they vary by your dbt Cloud account region).
+Make sure **all three IPs** are allowed on port 5439 in your Redshift security group.
+
+Common IP sets by dbt Cloud region:
+
+| dbt Cloud region | IPs |
+|---|---|
+| EU (Frankfurt) | `3.123.45.39`, `3.126.140.248`, `3.72.153.148` |
+| US (N. Virginia) | See [dbt Cloud IP docs](https://docs.getdbt.com/docs/cloud/about-cloud/access-regions-ip-addresses) |
+
+> For a quick demo, allowing `0.0.0.0/0` on port 5439 rules out IP issues entirely.
+> Restrict to specific IPs before sharing with customers.
+
 ### Create the connection in dbt Cloud
 
 1. In your dbt Cloud project: top nav → **Deploy** → **Connections** → **+ New connection**
    - Alternatively: **Account settings** → **Connections** → **+ New connection**
 2. Select **Redshift**
-3. Fill in the form exactly as follows:
+3. Fill in the **Settings** section:
 
 | Field | Value | Notes |
 |---|---|---|
 | Connection name | `Redshift Demo` | Any name |
-| Host | `<hostname only — see table above>` | No port, no `/dev` |
+| Server Hostname | `<hostname only — see table above>` | No port, no `/dev` |
 | Port | `5439` | Always 5439 for Redshift |
-| Database | `dev` | Must match the database in your endpoint |
-| Username | `dbt_user` | The user you created in Step 2 |
-| Password | `<your dbt_user password>` | |
+| OAuth method | `--` | Leave as default |
 
-4. Leave all other fields at their defaults
-5. Click **Test connection**
-   - Green checkmark ✅ → proceed to Save
-   - If it times out → your security group is not open (revisit Step 1, the inbound rule)
-   - If "authentication failed" → wrong username or password (re-check Step 2)
+4. **Critical:** Click **Optional settings** to expand it, then fill in:
+
+| Field | Value | Notes |
+|---|---|---|
+| Database | `dev` | Required — the form will fail with "request was invalid" if this is blank |
+
+> The Database field is inside **Optional settings** (collapsed by default) but it is
+> **not actually optional** — leaving it blank causes the "Create connection error: The request
+> was invalid" error even if hostname and port are correct.
+
+5. Username and password are set at the **developer credentials** level, not on the connection —
+   you'll do that after saving (see "Set your personal developer credentials" below)
 6. Click **Save**
 
 ### Create a development environment
@@ -410,15 +431,21 @@ dbt docs generate && dbt docs serve
 
 ### "Create connection error: The request was invalid"
 
-**Cause:** The Host field in dbt Cloud contains the port or database name.
+There are two separate causes for this error — check both:
 
-**Fix:** The Host field must contain the bare hostname only:
+**Cause 1: Database field is empty.**
+The Database field is inside the **Optional settings** accordion (collapsed by default).
+It looks optional but is required — leaving it blank triggers this exact error even if
+hostname and port are correct.
+- Fix: click **Optional settings** → fill in **Database**: `dev`
+
+**Cause 2: Hostname contains port or database name.**
 - Wrong: `my-cluster.abc123.us-east-1.redshift.amazonaws.com:5439`
 - Wrong: `my-cluster.abc123.us-east-1.redshift.amazonaws.com:5439/dev`
 - Wrong: `jdbc:redshift://my-cluster.abc123.us-east-1.redshift.amazonaws.com:5439/dev`
 - **Correct:** `my-cluster.abc123.us-east-1.redshift.amazonaws.com`
 
-Strip everything after `.amazonaws.com`. Put `5439` in the separate Port field and `dev` in the Database field.
+Strip everything after `.amazonaws.com`. Port goes in the Port field. Database goes in Optional settings.
 
 ### "Connection timed out" or no response from Test Connection
 
