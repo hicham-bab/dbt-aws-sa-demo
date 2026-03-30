@@ -254,10 +254,14 @@ all sharing the same Redshift connection.
 
 1. In dbt Cloud: top nav → **Account settings** → **Projects** → **+ New project**
 2. Name: `AWS Ecommerce Platform`
-3. Repository: select your fork → **Subdirectory**: `platform`
-4. Connection: `Redshift Demo`
-5. Development schema: `platform_dev`
-6. Click **Save**
+3. Repository: select your fork
+4. **Project subdirectory**: `platform` — this is critical. Without it, dbt Cloud initializes
+   a sample project at the repo root and runs `my_first_dbt_model` instead of your models.
+   - If the project is already created without a subdirectory: **Account settings** → **Projects**
+     → click your project → **Edit** → set **Project subdirectory** to `platform` → Save
+5. Connection: `Redshift Demo`
+6. Development schema: `platform_dev`
+7. Click **Save**
 
 ### Project 2 — Marketing (consumer)
 
