@@ -1,7 +1,7 @@
 category_id,name,description
 1,Cloud Storage,Data storage and archival solutions
 2,Compute,Virtual machines and processing resources
-3,Networking,VPNs, CDN, and connectivity products
-4,Security,Identity, encryption, and compliance tools
-5,Analytics,BI, data warehousing, and ML tools
-6,DevTools,CI/CD, monitoring, and developer tooling
+3,Networking,"VPNs, CDN, and connectivity products"
+4,Security,"Identity, encryption, and compliance tools"
+5,Analytics,"BI, data warehousing, and ML tools"
+6,DevTools,"CI/CD, monitoring, and developer tooling"
