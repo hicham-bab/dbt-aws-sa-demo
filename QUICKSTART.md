@@ -82,15 +82,26 @@ Cross-project lineage visible in dbt Explorer. Fusion LSP active in Kiro / VS Co
 
 dbt Cloud connects to Redshift over the internet. You need to open port 5439 in the security group.
 
-1. Go to your cluster/workgroup page → **Properties** tab → **Network and security**
-2. Click the link under **VPC security group** to open EC2
-3. Click **Edit inbound rules** → **Add rule**:
+**Finding the security group (Serverless):**
+1. Redshift console → **Serverless** (left nav) → **Workgroups** → click your workgroup
+2. Click the **Network and security** tab
+3. Under **VPC security groups**, click the `sg-...` link — this opens the EC2 console
+
+**Finding the security group (Provisioned):**
+1. Redshift console → **Clusters** → click your cluster
+2. **Properties** tab → **Network and security** → click the `sg-...` link
+
+**Adding the rule (same for both):**
+1. In EC2, select your security group → click the **Inbound rules** tab → **Edit inbound rules**
+2. Click **Add rule**:
    - Type: `Custom TCP`
    - Port range: `5439`
-   - Source: `Anywhere-IPv4` (`0.0.0.0/0`) — fine for a demo; restrict to
-     [dbt Cloud IPs](https://docs.getdbt.com/docs/cloud/about-cloud/access-regions-ip-addresses)
-     for production
-4. Click **Save rules**
+   - Source: `Anywhere-IPv4` — this sets `0.0.0.0/0` automatically
+3. Click **Save rules**
+
+> `0.0.0.0/0` is fine for a demo. For production, restrict to the specific dbt Cloud IPs
+> shown on the connection form (Settings section) or listed at
+> [docs.getdbt.com/docs/cloud/about-cloud/access-regions-ip-addresses](https://docs.getdbt.com/docs/cloud/about-cloud/access-regions-ip-addresses).
 
 ---
 
