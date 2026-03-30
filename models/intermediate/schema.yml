@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: int_orders_enriched
+    description: >
+      Orders joined with their line items. Provides order-level revenue totals.
+      One row per order. Used downstream by fct_orders and int_customer_orders.
+    columns:
+      - name: order_id
+        description: Surrogate primary key.
+        tests:
+          - not_null
+          - unique
+      - name: order_revenue
+        description: Total revenue for this order in USD (sum of line_total across all items).
+      - name: item_count
+        description: Number of distinct line items on the order.
+
+  - name: int_customer_orders
+    description: >
+      Aggregated order history per customer. One row per customer.
+      Includes lifetime revenue, order counts, first/last order dates, and average order value.
+      Serves as the primary input to fct_customer_lifetime_value.
+    columns:
+      - name: customer_id
+        description: Surrogate primary key — FK to stg_customers.
+        tests:
+          - not_null
+          - unique
+      - name: total_revenue
+        description: Sum of all completed order revenue for this customer, in USD.
+      - name: avg_order_value
+        description: Average order revenue across all completed orders, in USD.
+      - name: order_tenure_days
+        description: Days between the customer's first and last completed order.

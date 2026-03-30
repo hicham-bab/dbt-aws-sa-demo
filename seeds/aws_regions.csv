@@ -1,0 +1,19 @@
+region_code,region_name,geography,primary_az
+us-east-1,US East (N. Virginia),AMER,us-east-1a
+us-east-2,US East (Ohio),AMER,us-east-2a
+us-west-1,US West (N. California),AMER,us-west-1a
+us-west-2,US West (Oregon),AMER,us-west-2a
+ca-central-1,Canada (Central),AMER,ca-central-1a
+sa-east-1,South America (São Paulo),AMER,sa-east-1a
+eu-west-1,Europe (Ireland),EMEA,eu-west-1a
+eu-west-2,Europe (London),EMEA,eu-west-2a
+eu-west-3,Europe (Paris),EMEA,eu-west-3a
+eu-central-1,Europe (Frankfurt),EMEA,eu-central-1a
+eu-north-1,Europe (Stockholm),EMEA,eu-north-1a
+me-south-1,Middle East (Bahrain),EMEA,me-south-1a
+ap-southeast-1,Asia Pacific (Singapore),APAC,ap-southeast-1a
+ap-southeast-2,Asia Pacific (Sydney),APAC,ap-southeast-2a
+ap-northeast-1,Asia Pacific (Tokyo),APAC,ap-northeast-1a
+ap-northeast-2,Asia Pacific (Seoul),APAC,ap-northeast-2a
+ap-south-1,Asia Pacific (Mumbai),APAC,ap-south-1a
+ap-east-1,Asia Pacific (Hong Kong),APAC,ap-east-1a

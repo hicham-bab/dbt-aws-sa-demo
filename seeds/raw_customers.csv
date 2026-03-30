@@ -1,0 +1,26 @@
+customer_id,first_name,last_name,email,company,country,aws_region,customer_tier,created_at
+1,Alice,Johnson,alice.johnson@techcorp.com,TechCorp Inc,US,us-east-1,enterprise,2023-01-15
+2,Bob,Martinez,bob.martinez@cloudbuilders.io,Cloud Builders,US,us-west-2,growth,2023-02-01
+3,Caroline,Schmidt,c.schmidt@datenfabrik.de,Datenfabrik GmbH,Germany,eu-central-1,enterprise,2023-01-20
+4,David,Okonkwo,d.okonkwo@fintech.ng,FinTech Nigeria,Nigeria,eu-west-1,growth,2023-03-10
+5,Elena,Petrov,elena.petrov@cloudwise.ru,CloudWise,Russia,eu-north-1,starter,2023-02-14
+6,Frank,Chen,frank.chen@bytehouse.sg,ByteHouse,Singapore,ap-southeast-1,enterprise,2023-01-08
+7,Grace,Kim,grace.kim@seoulsystems.kr,Seoul Systems,Korea,ap-northeast-2,growth,2023-04-01
+8,Hiroshi,Tanaka,h.tanaka@tokyocloud.jp,Tokyo Cloud,Japan,ap-northeast-1,enterprise,2023-01-25
+9,Isabel,Rodrigues,i.rodrigues@brazildata.br,Brazil Data,Brazil,sa-east-1,starter,2023-05-12
+10,James,Wilson,j.wilson@midwest-ai.com,Midwest AI,US,us-east-2,growth,2023-03-22
+11,Katya,Novak,katya.novak@praguetech.cz,Prague Tech,Czech Republic,eu-west-3,starter,2023-06-01
+12,Liam,O'Brien,liam.obrien@dublincloud.ie,Dublin Cloud,Ireland,eu-west-1,growth,2023-02-28
+13,Mei,Zhang,mei.zhang@shanghaiml.cn,Shanghai ML,China,ap-east-1,enterprise,2023-01-10
+14,Nathan,Patel,n.patel@mumbaitech.in,Mumbai Tech,India,ap-south-1,growth,2023-04-15
+15,Olivia,Thompson,o.thompson@sydsolutions.au,Sydney Solutions,Australia,ap-southeast-2,enterprise,2023-02-05
+16,Paulo,Ferreira,p.ferreira@lisbonai.pt,Lisbon AI,Portugal,eu-west-2,starter,2023-07-01
+17,Quinn,Adams,quinn.adams@seattle-dev.com,Seattle Dev,US,us-west-1,growth,2023-03-18
+18,Rania,Hassan,r.hassan@cairocloud.eg,Cairo Cloud,Egypt,me-south-1,starter,2023-06-20
+19,Samuel,Berg,s.berg@stockholmtech.se,Stockholm Tech,Sweden,eu-north-1,enterprise,2023-01-30
+20,Tina,Müller,t.muller@berlin-data.de,Berlin Data,Germany,eu-central-1,growth,2023-05-08
+21,Umar,Khan,u.khan@karachicloud.pk,Karachi Cloud,Pakistan,ap-south-1,starter,2023-08-01
+22,Vera,Popescu,v.popescu@bucharesttech.ro,Bucharest Tech,Romania,eu-central-1,growth,2023-04-22
+23,Wei,Liu,wei.liu@shenzhenai.cn,Shenzhen AI,China,ap-east-1,enterprise,2023-02-12
+24,Xavier,Dupont,x.dupont@pariscloud.fr,Paris Cloud,France,eu-west-3,growth,2023-03-05
+25,Yuki,Sato,yuki.sato@osakatech.jp,Osaka Tech,Japan,ap-northeast-1,enterprise,2023-01-18

@@ -1,0 +1,131 @@
+version: 2
+
+semantic_models:
+  - name: orders
+    description: Order fact grain — one row per completed order.
+    model: ref('fct_orders')
+    defaults:
+      agg_time_dimension: order_date
+
+    entities:
+      - name: order
+        type: primary
+        expr: order_id
+      - name: customer
+        type: foreign
+        expr: customer_id
+
+    dimensions:
+      - name: order_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: geography
+        type: categorical
+      - name: aws_region
+        type: categorical
+      - name: customer_tier
+        type: categorical
+      - name: status
+        type: categorical
+
+    measures:
+      - name: total_revenue
+        description: Sum of completed order revenue in USD.
+        agg: sum
+        expr: order_revenue
+      - name: order_count
+        description: Number of completed orders.
+        agg: count_distinct
+        expr: order_id
+      - name: avg_order_value
+        description: Average revenue per completed order.
+        agg: average
+        expr: order_revenue
+
+  - name: customers
+    description: Customer CLV grain — one row per customer.
+    model: ref('fct_customer_lifetime_value')
+
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+
+    dimensions:
+      - name: geography
+        type: categorical
+      - name: aws_region
+        type: categorical
+      - name: customer_tier
+        type: categorical
+      - name: ltv_segment
+        type: categorical
+      - name: customer_since
+        type: time
+        type_params:
+          time_granularity: day
+
+    measures:
+      - name: customer_count
+        description: Number of customers.
+        agg: count_distinct
+        expr: customer_id
+      - name: total_customer_revenue
+        description: Sum of lifetime revenue across all customers.
+        agg: sum
+        expr: total_revenue
+      - name: avg_ltv
+        description: Average lifetime value per customer.
+        agg: average
+        expr: total_revenue
+
+metrics:
+  - name: total_revenue
+    description: >
+      Total USD revenue from completed orders. The canonical revenue metric used
+      across all dashboards, Bedrock agents, and SageMaker feature pipelines.
+      Excludes returned and cancelled orders.
+    label: Total Revenue (USD)
+    type: simple
+    type_params:
+      measure:
+        name: total_revenue
+        fill_nulls_with: 0
+    filter: "{{ Dimension('order__status') }} = 'completed'"
+
+  - name: order_count
+    description: Number of completed orders placed.
+    label: Orders Placed
+    type: simple
+    type_params:
+      measure:
+        name: order_count
+        fill_nulls_with: 0
+
+  - name: avg_order_value
+    description: Average revenue per completed order (USD).
+    label: Avg Order Value (USD)
+    type: simple
+    type_params:
+      measure:
+        name: avg_order_value
+
+  - name: revenue_per_customer
+    description: Total revenue divided by unique customer count — a key growth KPI.
+    label: Revenue per Customer (USD)
+    type: ratio
+    type_params:
+      numerator:
+        name: total_revenue
+      denominator:
+        name: customer_count
+
+  - name: active_customers
+    description: Customers with at least one completed order.
+    label: Active Customers
+    type: simple
+    type_params:
+      measure:
+        name: customer_count
+        fill_nulls_with: 0

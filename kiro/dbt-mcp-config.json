@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "dbt": {
+      "command": "uvx",
+      "args": ["dbt-mcp"],
+      "env": {
+        "DBT_HOST": "<your-dbt-cloud-host>",
+        "DBT_TOKEN": "<your-dbt-cloud-service-token>",
+        "DBT_ENVIRONMENT_ID": "<your-environment-id>",
+        "DBT_PROJECT_ID": "<your-project-id>"
+      }
+    }
+  }
+}

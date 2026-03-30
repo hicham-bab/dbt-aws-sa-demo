@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: >
+      Cleaned and renamed customer records. One row per customer.
+      Source: raw.raw_customers (S3 → Glue → Redshift, nightly load).
+    columns:
+      - name: customer_id
+        description: Surrogate primary key for the customer.
+        tests:
+          - not_null
+          - unique
+      - name: full_name
+        description: Customer's full name (first_name + last_name).
+      - name: email
+        description: Lowercase-normalised customer email address.
+        tests:
+          - not_null
+          - unique
+      - name: aws_region
+        description: AWS region code where the customer account was registered.
+        tests:
+          - not_null
+      - name: customer_tier
+        description: "Commercial tier: starter | growth | enterprise."
+        tests:
+          - accepted_values:
+              values: [starter, growth, enterprise]
+      - name: created_at
+        description: UTC timestamp of account creation.
+        tests:
+          - not_null
+
+  - name: stg_orders
+    description: >
+      Cleaned order records. One row per order.
+      Source: raw.raw_orders (Kinesis → Redshift, near-real-time).
+    columns:
+      - name: order_id
+        description: Surrogate primary key for the order.
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: FK to stg_customers.customer_id.
+        tests:
+          - not_null
+      - name: status
+        description: "Lowercase order status: pending | completed | returned | cancelled."
+        tests:
+          - accepted_values:
+              values: [pending, completed, returned, cancelled]
+      - name: is_completed
+        description: Boolean flag — true when status = 'completed'.
+      - name: order_month
+        description: First day of the month in which the order was placed.
+
+  - name: stg_order_items
+    description: >
+      Cleaned order line items. One row per product per order.
+      Includes computed line_total (quantity × unit_price).
+    columns:
+      - name: order_item_id
+        description: Surrogate primary key.
+        tests:
+          - not_null
+          - unique
+      - name: line_total
+        description: quantity × unit_price in USD.
+
+  - name: stg_products
+    description: >
+      Cleaned product catalog. One row per product.
+    columns:
+      - name: product_id
+        description: Surrogate primary key.
+        tests:
+          - not_null
+          - unique
+      - name: product_name
+        description: Human-readable product name.
+      - name: list_price
+        description: Current list price in USD.
+      - name: is_active
+        description: Boolean — false means the product has been retired from the catalog.
+
+  - name: stg_aws_regions
+    description: >
+      AWS region reference data. Maps region codes (e.g. us-east-1) to human-readable
+      names and geographic groupings (AMER / EMEA / APAC).
+      Used as a dimension to slice revenue and customer metrics by geography.
+    columns:
+      - name: region_code
+        description: AWS region identifier — matches aws_region on stg_customers.
+        tests:
+          - not_null
+          - unique
+      - name: region_name
+        description: Human-readable AWS region name.
+      - name: geography
+        description: "High-level geographic grouping: AMER | EMEA | APAC."
+        tests:
+          - not_null
+          - accepted_values:
+              values: [AMER, EMEA, APAC]

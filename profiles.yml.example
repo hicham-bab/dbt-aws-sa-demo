@@ -1,0 +1,26 @@
+aws_ecommerce:
+  target: dev
+  outputs:
+    dev:
+      type: redshift
+      host: <your-cluster>.redshift.amazonaws.com   # or <workgroup>.redshift-serverless.amazonaws.com
+      user: dbt_user
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      port: 5439
+      dbname: dev
+      schema: dbt_dev                               # your personal dev schema
+      threads: 4
+      connect_timeout: 30
+      # Optional — use IAM auth instead of password
+      # method: iam
+      # cluster_id: <your-cluster-id>
+      # iam_profile: default
+    prod:
+      type: redshift
+      host: <your-cluster>.redshift.amazonaws.com
+      user: dbt_prod_user
+      password: "{{ env_var('DBT_PROD_PASSWORD') }}"
+      port: 5439
+      dbname: dev
+      schema: analytics
+      threads: 8

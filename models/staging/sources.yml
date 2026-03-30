@@ -1,0 +1,111 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw e-commerce data seeded from CSV files. In production this schema is
+      populated by AWS Glue jobs that land data from S3 into Redshift.
+    schema: raw
+    tables:
+      - name: raw_customers
+        description: One row per customer account. Loaded nightly from S3 via AWS Glue.
+        columns:
+          - name: customer_id
+            description: Surrogate primary key for the customer.
+            tests:
+              - not_null
+              - unique
+          - name: email
+            description: Customer email address.
+            tests:
+              - not_null
+              - unique
+          - name: aws_region
+            description: AWS region code where the customer account was created.
+          - name: customer_tier
+            description: "Commercial tier: starter | growth | enterprise."
+          - name: created_at
+            description: Timestamp when the account was created.
+            tests:
+              - not_null
+
+      - name: raw_orders
+        description: One row per order. Loaded in near-real-time via Kinesis → Redshift.
+        columns:
+          - name: order_id
+            description: Surrogate primary key for the order.
+            tests:
+              - not_null
+              - unique
+          - name: customer_id
+            description: FK to raw_customers.customer_id.
+            tests:
+              - not_null
+              - relationships:
+                  to: source('raw', 'raw_customers')
+                  field: customer_id
+          - name: status
+            description: "Order lifecycle status: pending | completed | returned | cancelled."
+            tests:
+              - not_null
+              - accepted_values:
+                  values: [pending, completed, returned, cancelled]
+
+      - name: raw_order_items
+        description: Line items for each order. One row per product per order.
+        columns:
+          - name: order_item_id
+            description: Surrogate primary key.
+            tests:
+              - not_null
+              - unique
+          - name: order_id
+            description: FK to raw_orders.order_id.
+            tests:
+              - not_null
+          - name: product_id
+            description: FK to raw_products.product_id.
+            tests:
+              - not_null
+          - name: quantity
+            description: Number of units purchased.
+          - name: unit_price
+            description: Price per unit at time of purchase (USD).
+
+      - name: raw_products
+        description: Product catalog. Loaded from the product management system.
+        columns:
+          - name: product_id
+            description: Surrogate primary key.
+            tests:
+              - not_null
+              - unique
+          - name: sku
+            description: Stock keeping unit — unique product identifier.
+            tests:
+              - not_null
+              - unique
+
+      - name: raw_product_categories
+        description: Product category reference table.
+        columns:
+          - name: category_id
+            description: Surrogate primary key.
+            tests:
+              - not_null
+              - unique
+
+      - name: aws_regions
+        description: AWS region reference data including geography grouping (AMER / EMEA / APAC).
+        columns:
+          - name: region_code
+            description: AWS region identifier (e.g. us-east-1).
+            tests:
+              - not_null
+              - unique
+          - name: geography
+            description: "High-level geographic grouping: AMER | EMEA | APAC."
+            tests:
+              - not_null
+              - accepted_values:
+                  values: [AMER, EMEA, APAC]
