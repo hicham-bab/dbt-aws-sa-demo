@@ -57,8 +57,10 @@ Cross-project lineage visible in dbt Explorer. Fusion LSP active in Kiro / VS Co
 - Note it down — you'll need it in Step 4
 
 **Enable public accessibility (required for dbt Cloud):**
-- On the same workgroup page → **Actions** → **Edit publicly accessible setting** → turn it **On**
+- On the workgroup page, click the **Network and security** tab
+- Find the **Publicly accessible** row → click **Edit** → toggle to **On** → Save
 - Without this, dbt Cloud cannot reach your Serverless endpoint from the internet
+- Note: the Actions menu does **not** have this option in the current console — it is only in the Network and security tab
 
 ### Option B — Redshift Provisioned Cluster
 
@@ -422,7 +424,7 @@ Strip everything after `.amazonaws.com`. Put `5439` in the separate Port field a
 
 **Causes and fixes (in order):**
 1. Security group not open — verify port 5439 is allowed from `0.0.0.0/0` (or dbt Cloud IPs)
-2. Serverless workgroup not publicly accessible — go to workgroup → **Actions** → **Edit publicly accessible setting** → On
+2. Serverless workgroup not publicly accessible — go to workgroup → **Network and security** tab → **Publicly accessible** → Edit → On
 3. Workgroup not in Available state — wait and refresh the Redshift console
 4. Wrong region — your dbt Cloud account region and Redshift region don't need to match, but confirm the hostname contains the correct region (e.g. `us-east-1`)
 
