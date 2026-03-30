@@ -96,12 +96,14 @@ dbt Cloud connects to Redshift over the internet. You need to open port 5439 in 
 4. Click the **Inbound rules** tab → **Edit inbound rules** → **Add rule**:
    - Type: `Custom TCP`
    - Port range: `5439`
-   - Source: `Anywhere-IPv4` — this sets `0.0.0.0/0` automatically
+   - Source: click the **Source** dropdown → select **Anywhere-IPv4**
+     — this fills in `0.0.0.0/0` automatically. Do not type an IP manually here.
 5. Click **Save rules**
 
-> `0.0.0.0/0` is fine for a demo. For production, restrict to the specific dbt Cloud IPs
-> shown on the connection form (Settings section) or listed at
-> [docs.getdbt.com/docs/cloud/about-cloud/access-regions-ip-addresses](https://docs.getdbt.com/docs/cloud/about-cloud/access-regions-ip-addresses).
+> **For production:** add three separate rules using the specific dbt Cloud IPs
+> (shown in the Settings section of the dbt Cloud connection form), each with `/32`:
+> `3.123.45.39/32`, `3.126.140.248/32`, `3.72.153.148/32` (EU Frankfurt IPs — yours may differ).
+> `/32` is correct — it means "exactly this one IP address". Each IP needs its own rule row.
 
 ---
 
