@@ -44,8 +44,11 @@ Cross-project lineage visible in dbt Explorer. Fusion LSP active in Kiro / VS Co
 3. Choose **Use default settings**
    - This creates a workgroup named `default` and a namespace named `default`
 4. Under **Credentials**, set an admin username (e.g. `admin`) and a password — **write these down**
-5. Click **Save configuration**
-6. Wait ~2 minutes until the workgroup status shows **Available**
+5. You'll see a **Permissions** section warning about IAM roles — **skip it**.
+   An IAM role is only needed for COPY/UNLOAD from S3. dbt connects with username + password,
+   and we load data via `dbt seed` (SQL INSERT, not S3 COPY), so no IAM role is required.
+6. Click **Save configuration**
+7. Wait ~2 minutes until the workgroup status shows **Available**
 
 **Find your endpoint:**
 - Left nav → **Serverless** → **Workgroups** → click `default`
