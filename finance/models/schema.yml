@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: fct_revenue_recognised
+    description: >
+      Finance revenue recognition model. One row per order.
+      Adds recognised_revenue (completed orders only) and returned_amount
+      fields for P&L and audit reporting.
+
+      Cross-project ref:
+        - aws_ecommerce.fct_orders (canonical order grain, public contract)
+
+      Finance owns the revenue recognition rules.
+      Platform owns the order fact and its contract.
+    config:
+      group: finance_analytics
+    columns:
+      - name: order_id
+        description: Order identifier (from platform.fct_orders).
+        tests:
+          - not_null
+          - unique
+      - name: recognised_revenue
+        description: order_revenue if status = 'completed', else 0. Canonical revenue definition.
+        tests:
+          - not_null
+      - name: returned_amount
+        description: order_revenue if status = 'returned', else 0.
+      - name: finance_period
+        description: Month in which revenue is recognised (= order_month).
+
+  - name: fct_product_revenue
+    description: >
+      Finance product revenue summary. One row per product.
+      Adds average discount rate on top of platform product performance data.
+
+      Cross-project refs:
+        - aws_ecommerce.fct_product_performance
+        - aws_ecommerce.fct_orders
+    config:
+      group: finance_analytics
+    columns:
+      - name: product_id
+        description: Product identifier (from platform.fct_product_performance).
+        tests:
+          - not_null
+          - unique
+      - name: avg_discount_rate
+        description: 1 - (avg_selling_price / list_price). Measures pricing realisation.
+      - name: gross_revenue
+        description: Total completed order revenue for this product.
+
+  - name: fct_geography_pnl
+    description: >
+      Finance geography P&L. Monthly revenue by AWS region with quarter label
+      and month-over-month growth rate. Used for CFO regional P&L reporting.
+
+      Cross-project ref:
+        - aws_ecommerce.fct_revenue_by_region (public contract)
+
+      Demonstrates the dbt Mesh pattern: finance builds opinionated finance logic
+      on top of a governed, versioned platform contract.
+    config:
+      group: finance_analytics
+    columns:
+      - name: order_month
+        description: First day of the month.
+        tests:
+          - not_null
+      - name: geography
+        description: "AMER | EMEA | APAC."
+        tests:
+          - not_null
+      - name: fiscal_quarter
+        description: "Quarter label e.g. Q1 2025."
+      - name: mom_growth_rate
+        description: Month-over-month revenue growth rate for this geography/region.

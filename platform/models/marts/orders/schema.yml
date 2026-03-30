@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: >
+      PUBLIC model. Order fact table. One row per order, enriched with customer
+      geography and order-level revenue. The canonical order grain.
+      Consumed by: marketing (customer activity), finance (revenue).
+      Contract enforced.
+    config:
+      group: platform_core
+      access: public
+      contract:
+        enforced: true
+    columns:
+      - name: order_id
+        description: Surrogate primary key.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: FK to dim_customers.customer_id.
+        data_type: integer
+      - name: customer_name
+        data_type: varchar
+      - name: company
+        data_type: varchar
+      - name: aws_region
+        data_type: varchar
+      - name: region_name
+        data_type: varchar
+      - name: geography
+        description: "AMER | EMEA | APAC."
+        data_type: varchar
+      - name: customer_tier
+        data_type: varchar
+      - name: status
+        description: "Order status: pending | completed | returned | cancelled."
+        data_type: varchar
+      - name: is_completed
+        description: Boolean — true when status = 'completed'.
+        data_type: boolean
+      - name: order_date
+        description: UTC timestamp when the order was placed.
+        data_type: timestamp
+      - name: order_month
+        description: First day of the month in which the order was placed.
+        data_type: timestamp
+      - name: item_count
+        description: Number of distinct line items on the order.
+        data_type: integer
+      - name: total_units
+        description: Total units ordered across all line items.
+        data_type: integer
+      - name: order_revenue
+        description: Total order revenue in USD (sum of line_total).
+        data_type: decimal(12,2)
+
+  - name: fct_revenue_by_region
+    description: >
+      PUBLIC model. Revenue aggregated by AWS geography and month. Completed orders only.
+      Primary table for the Bedrock text-to-SQL demo:
+        "What was total revenue from EMEA customers in Q1 2025?"
+      Consumed by: finance (regional P&L), marketing (geo performance).
+      Contract enforced.
+
+      Business definitions:
+        - total_revenue: sum of order_revenue for completed orders only.
+        - revenue_per_customer: total_revenue / unique customers that month.
+    config:
+      group: platform_core
+      access: public
+      contract:
+        enforced: true
+    columns:
+      - name: order_month
+        description: First day of the month — time grain for all aggregations.
+        data_type: timestamp
+        tests:
+          - not_null
+      - name: geography
+        description: "AMER | EMEA | APAC."
+        data_type: varchar
+        tests:
+          - not_null
+      - name: aws_region
+        data_type: varchar
+      - name: region_name
+        data_type: varchar
+      - name: unique_customers
+        description: Distinct customers with a completed order this month.
+        data_type: integer
+      - name: total_orders
+        description: Count of completed orders this month.
+        data_type: integer
+      - name: total_revenue
+        description: Sum of all completed order revenue in USD for this region/month.
+        data_type: decimal(12,2)
+      - name: avg_order_value
+        description: Average order revenue in USD.
+        data_type: decimal(12,2)
+      - name: revenue_per_customer
+        description: total_revenue / unique_customers.
+        data_type: decimal(12,2)

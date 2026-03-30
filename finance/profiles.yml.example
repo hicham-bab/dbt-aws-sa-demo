@@ -1,0 +1,12 @@
+finance:
+  target: dev
+  outputs:
+    dev:
+      type: redshift
+      host: <your-cluster>.redshift.amazonaws.com
+      user: dbt_user
+      password: "{{ env_var('DBT_PASSWORD') }}"
+      port: 5439
+      dbname: dev
+      schema: finance_dev
+      threads: 4

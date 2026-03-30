@@ -1,0 +1,138 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: >
+      PUBLIC model. Customer dimension enriched with AWS region metadata.
+      Consumed by: marketing (segmentation), finance (revenue attribution).
+      Contract enforced — column changes are a breaking change for all consumers.
+    config:
+      group: platform_core
+      access: public
+      contract:
+        enforced: true
+    columns:
+      - name: customer_id
+        description: Surrogate primary key.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - not_null
+          - unique
+      - name: full_name
+        description: Customer full name (first + last).
+        data_type: varchar
+      - name: email
+        description: Lowercase-normalised customer email address.
+        data_type: varchar
+        tests:
+          - not_null
+          - unique
+      - name: company
+        description: Customer company name.
+        data_type: varchar
+      - name: country
+        description: Customer country.
+        data_type: varchar
+      - name: aws_region
+        description: AWS region code where the customer was registered (e.g. us-east-1).
+        data_type: varchar
+      - name: region_name
+        description: Human-readable AWS region name.
+        data_type: varchar
+      - name: geography
+        description: "High-level geographic grouping: AMER | EMEA | APAC."
+        data_type: varchar
+        tests:
+          - accepted_values:
+              arguments:
+                values: [AMER, EMEA, APAC]
+      - name: customer_tier
+        description: "Commercial tier: starter | growth | enterprise."
+        data_type: varchar
+        tests:
+          - accepted_values:
+              arguments:
+                values: [starter, growth, enterprise]
+      - name: customer_since
+        description: UTC timestamp of account creation.
+        data_type: timestamp
+
+  - name: fct_customer_lifetime_value
+    description: >
+      PUBLIC model. Customer Lifetime Value (CLV) fact table. One row per customer.
+      Provides total revenue, order counts, recency metrics, LTV score, and segment.
+      Primary table consumed by Amazon Bedrock agents for CLV queries.
+      Consumed by: marketing (CLV segmentation).
+      Contract enforced.
+
+      Business definitions:
+        - total_revenue: sum of COMPLETED order revenue only. Excludes returned/cancelled.
+        - ltv_score: total_revenue x 1.2 recency bonus if ordered within last 90 days.
+        - ltv_segment: champion (>=10000), loyal (>=3000), potential (>=500), new (<500).
+    config:
+      group: platform_core
+      access: public
+      contract:
+        enforced: true
+    columns:
+      - name: customer_id
+        description: Surrogate primary key.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - not_null
+          - unique
+      - name: full_name
+        data_type: varchar
+      - name: email
+        data_type: varchar
+      - name: company
+        data_type: varchar
+      - name: country
+        data_type: varchar
+      - name: aws_region
+        data_type: varchar
+      - name: region_name
+        data_type: varchar
+      - name: geography
+        description: "AMER | EMEA | APAC."
+        data_type: varchar
+      - name: customer_tier
+        data_type: varchar
+      - name: customer_since
+        data_type: timestamp
+      - name: total_orders
+        description: Number of completed orders placed by this customer.
+        data_type: integer
+      - name: total_revenue
+        description: Total USD revenue from all completed orders. Excludes returned/cancelled.
+        data_type: decimal(12,2)
+        tests:
+          - not_null
+      - name: avg_order_value
+        description: Average revenue per completed order in USD.
+        data_type: decimal(12,2)
+      - name: first_order_at
+        description: Timestamp of the customer's first completed order.
+        data_type: timestamp
+      - name: last_order_at
+        description: Timestamp of the customer's most recent completed order.
+        data_type: timestamp
+      - name: order_tenure_days
+        description: Days between first and last completed order.
+        data_type: integer
+      - name: ltv_score
+        description: Recency-weighted LTV score (total_revenue x 1.2 if ordered in last 90 days).
+        data_type: decimal(12,2)
+      - name: ltv_segment
+        description: "Revenue-based segment: champion | loyal | potential | new."
+        data_type: varchar
+        tests:
+          - accepted_values:
+              arguments:
+                values: [champion, loyal, potential, new]

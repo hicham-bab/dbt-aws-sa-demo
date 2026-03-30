@@ -1,0 +1,86 @@
+version: 2
+
+models:
+  - name: dim_products
+    description: >
+      PUBLIC model. Product dimension enriched with category name.
+      Consumed by: finance (revenue by product/category).
+      Contract enforced.
+    config:
+      group: platform_core
+      access: public
+      contract:
+        enforced: true
+    columns:
+      - name: product_id
+        description: Surrogate primary key.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - not_null
+          - unique
+      - name: product_name
+        description: Human-readable product name.
+        data_type: varchar
+      - name: sku
+        description: Unique product stock keeping unit.
+        data_type: varchar
+        tests:
+          - not_null
+          - unique
+      - name: category_id
+        data_type: integer
+      - name: category_name
+        data_type: varchar
+      - name: list_price
+        description: Current list price in USD.
+        data_type: decimal(10,2)
+      - name: is_active
+        description: Boolean — false means retired from catalog.
+        data_type: boolean
+
+  - name: fct_product_performance
+    description: >
+      PUBLIC model. Product performance summary. One row per product.
+      Aggregates units sold, revenue, and order counts from completed orders only.
+      Consumed by: finance (product P&L).
+      Contract enforced.
+    config:
+      group: platform_core
+      access: public
+      contract:
+        enforced: true
+    columns:
+      - name: product_id
+        description: Surrogate primary key.
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - not_null
+          - unique
+      - name: product_name
+        data_type: varchar
+      - name: sku
+        data_type: varchar
+      - name: category_name
+        data_type: varchar
+      - name: list_price
+        data_type: decimal(10,2)
+      - name: is_active
+        data_type: boolean
+      - name: total_orders
+        description: Count of completed orders containing this product.
+        data_type: integer
+      - name: total_units_sold
+        description: Sum of quantity across all completed orders for this product.
+        data_type: integer
+      - name: total_revenue
+        description: Sum of line_total across all completed orders for this product.
+        data_type: decimal(12,2)
+      - name: avg_selling_price
+        description: Average unit_price at time of sale (may differ from current list_price).
+        data_type: decimal(10,2)

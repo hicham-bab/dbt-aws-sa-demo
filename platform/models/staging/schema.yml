@@ -5,6 +5,9 @@ models:
     description: >
       Cleaned and renamed customer records. One row per customer.
       Source: raw.raw_customers (S3 → Glue → Redshift, nightly load).
+    config:
+      group: platform_staging
+      access: protected
     columns:
       - name: customer_id
         description: Surrogate primary key for the customer.
@@ -26,7 +29,8 @@ models:
         description: "Commercial tier: starter | growth | enterprise."
         tests:
           - accepted_values:
-              values: [starter, growth, enterprise]
+              arguments:
+                values: [starter, growth, enterprise]
       - name: created_at
         description: UTC timestamp of account creation.
         tests:
@@ -50,7 +54,8 @@ models:
         description: "Lowercase order status: pending | completed | returned | cancelled."
         tests:
           - accepted_values:
-              values: [pending, completed, returned, cancelled]
+              arguments:
+                values: [pending, completed, returned, cancelled]
       - name: is_completed
         description: Boolean flag — true when status = 'completed'.
       - name: order_month
@@ -103,4 +108,5 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: [AMER, EMEA, APAC]
+              arguments:
+                values: [AMER, EMEA, APAC]

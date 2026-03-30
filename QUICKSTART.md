@@ -7,10 +7,13 @@ This guide is written for AWS Solutions Architects trying dbt for the first time
 
 ## What you'll have at the end
 
-- A dbt Cloud project connected to your Redshift cluster or Serverless workgroup
-- 14 models (staging → intermediate → marts) built and tested
-- Auto-generated documentation and lineage graph
+- A **dbt Mesh** with 3 projects connected to the same Redshift cluster:
+  - `platform/` — 14 models (staging → intermediate → marts), public contracts, Semantic Layer
+  - `marketing/` — 2 consumer models using cross-project `ref()`
+  - `finance/` — 3 consumer models using cross-project `ref()`
+- Auto-generated documentation and lineage graph spanning all three projects in dbt Explorer
 - A Semantic Layer with 5 metrics ready for Bedrock or QuickSight to query
+- Fusion LSP active in Kiro (or VS Code/Cursor) for live SQL feedback
 
 ---
 
@@ -134,13 +137,46 @@ In your dbt Cloud project:
 
 ---
 
-## Step 5 — Load the seed data
+## Step 5 — Set up the dbt Mesh projects in dbt Cloud
 
-The demo uses CSV seed files instead of S3/Glue to keep setup self-contained.
-In the dbt Cloud IDE:
+This repo has three dbt projects. In dbt Cloud you set each up as its own project,
+all pointing to the same Redshift connection.
 
-1. Open the IDE (**Develop** → **Cloud IDE**)
-2. In the terminal at the bottom, run:
+### 5a — Platform project (do this first)
+
+1. In dbt Cloud, create a new project named **AWS Ecommerce Platform**
+2. Set the **repository subdirectory** to `platform/`
+3. Use the Redshift connection from Step 4
+4. Set the default schema to `dbt_dev` for development
+
+### 5b — Marketing consumer project
+
+1. Create a second project named **Marketing Analytics**
+2. Same repo, subdirectory `marketing/`
+3. Same Redshift connection
+4. In **Project settings** → **Dependencies**, add the **AWS Ecommerce Platform** project
+   - This tells dbt Cloud how to resolve `ref('aws_ecommerce', '...')` calls
+5. Default schema: `marketing_dev`
+
+### 5c — Finance consumer project
+
+1. Create a third project named **Finance Analytics**
+2. Same repo, subdirectory `finance/`
+3. Same Redshift connection
+4. **Dependencies** → add **AWS Ecommerce Platform**
+5. Default schema: `finance_dev`
+
+> **Running locally?** Each project directory has a `profiles.yml.example`.
+> Copy it to `profiles.yml`, fill in your Redshift credentials, and run
+> `dbt build` from inside that directory.
+
+---
+
+## Step 6 — Load seed data and build the platform
+
+All seed data lives in the platform project. **Run from the `platform/` directory:**
+
+In the dbt Cloud IDE for the platform project:
 
 ```bash
 dbt seed
@@ -156,23 +192,27 @@ This loads 6 CSV files into your `raw` schema in Redshift:
 
 Expected output: `Done. PASS=6 WARN=0 ERROR=0`
 
----
-
-## Step 6 — Build all models and run tests
+Then build all platform models:
 
 ```bash
 dbt build
 ```
 
-This command runs in order:
-1. Seeds (already done, but `build` will skip if up to date)
-2. Models (14 models: staging → intermediate → marts)
-3. Tests (source freshness tests + schema/data tests on all models)
+14 models built: staging (5) → intermediate (2) → marts (7).
+Expected output: `Done. PASS=XX WARN=0 ERROR=0 SKIP=0 TOTAL=XX`
 
-Expected output:
+Then build the consumer projects (each from their own IDE or directory):
+
+```bash
+# Marketing project
+cd ../marketing && dbt build
+
+# Finance project
+cd ../finance && dbt build
 ```
-Done. PASS=XX WARN=0 ERROR=0 SKIP=0 TOTAL=XX
-```
+
+The consumer projects read the platform marts via cross-project `ref()` —
+dbt resolves these to the actual Redshift tables in the `marts` schema.
 
 ---
 
@@ -207,7 +247,7 @@ To enable the Semantic Layer for Bedrock or QuickSight:
 3. Under **Semantic Layer**, click **Configure** and note the connection details
 4. Use these details to configure your Bedrock agent or JDBC connection
 
-The 5 metrics defined in `semantic_models/metrics.yml` will be available immediately:
+The 5 metrics defined in `platform/semantic_models/metrics.yml` will be available immediately:
 - `total_revenue` — filterable by geography, region, customer_tier, date
 - `order_count`
 - `avg_order_value`

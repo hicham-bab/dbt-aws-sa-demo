@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: mart_customer_segments
+    description: >
+      Marketing customer segmentation model. Enriches platform CLV data with
+      recency-based marketing segments and campaign eligibility flags.
+
+      Cross-project refs:
+        - aws_ecommerce.fct_customer_lifetime_value (CLV, ltv_segment)
+        - aws_ecommerce.fct_orders (recency — orders in last 90 days)
+
+      The platform team owns the CLV definition and contract.
+      The marketing team owns the segment logic built on top.
+    config:
+      group: marketing_analytics
+    columns:
+      - name: customer_id
+        description: Customer identifier (from platform.fct_customer_lifetime_value).
+        tests:
+          - not_null
+          - unique
+      - name: marketing_segment
+        description: >
+          Recency + value segment.
+          champion: top LTV + active in last 90 days.
+          loyal: high LTV + active.
+          at_risk: high LTV but no recent order.
+          potential: mid LTV.
+          lapsed: low LTV, previously purchased.
+          never_purchased: zero completed orders.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [champion, loyal, at_risk, potential, lapsed, never_purchased]
+      - name: is_winback_candidate
+        description: True if the customer has revenue but no order in the last 90 days.
+      - name: is_upsell_candidate
+        description: True if the customer is in the 'potential' segment with 2+ orders.
+
+  - name: mart_region_performance
+    description: >
+      Regional marketing performance. Aggregates revenue, active customers, and
+      activation rate by AWS geography and month.
+
+      Cross-project refs:
+        - aws_ecommerce.fct_revenue_by_region
+        - aws_ecommerce.dim_customers
+    config:
+      group: marketing_analytics
+    columns:
+      - name: order_month
+        description: First day of the month.
+        tests:
+          - not_null
+      - name: geography
+        description: "AMER | EMEA | APAC."
+        tests:
+          - not_null
+      - name: activation_rate
+        description: Fraction of registered customers who placed a completed order this month.

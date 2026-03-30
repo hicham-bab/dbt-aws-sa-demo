@@ -9,24 +9,52 @@ AWS regions and geographies your customers already understand.
 
 ---
 
-## Repository structure
+## dbt Mesh structure
+
+This repo uses **dbt Mesh** — three independent dbt projects with enforced cross-project contracts.
 
 ```
 dbt-aws-sa-demo/
-├── models/
-│   ├── staging/          # stg_* views — clean, renamed source tables
-│   ├── intermediate/     # int_* views — business logic joins
-│   └── marts/
-│       ├── customers/    # dim_customers, fct_customer_lifetime_value
-│       ├── orders/       # fct_orders, fct_revenue_by_region
-│       └── products/     # dim_products, fct_product_performance
-├── seeds/                # CSV seed data (replaces S3/Glue for demo setup)
-├── semantic_models/      # dbt Semantic Layer — 5 metrics for Bedrock queries
-├── setup/                # Redshift SQL setup scripts + IAM guide
-├── kiro/                 # Kiro IDE config + Scene 3 agent skill prompts
-├── QUICKSTART.md         # Step-by-step: Redshift → dbt Cloud → running models
-└── DEMO_SCRIPT.md        # Full scene-by-scene demo script with talk tracks
+├── platform/                    # Data Platform team — producer
+│   ├── dbt_project.yml          # project: aws_ecommerce
+│   ├── models/
+│   │   ├── staging/             # protected — stg_* views (S3 → Glue → Redshift)
+│   │   ├── intermediate/        # protected — int_* business logic views
+│   │   └── marts/               # PUBLIC — contracted models consumed by other projects
+│   │       ├── customers/       # dim_customers, fct_customer_lifetime_value
+│   │       ├── orders/          # fct_orders, fct_revenue_by_region
+│   │       └── products/        # dim_products, fct_product_performance
+│   ├── seeds/                   # CSV seed data (replaces S3/Glue for demo setup)
+│   └── semantic_models/         # dbt Semantic Layer — 5 metrics for Bedrock
+│
+├── marketing/                   # Marketing Analytics team — consumer
+│   ├── dbt_project.yml          # project: marketing
+│   └── models/
+│       ├── mart_customer_segments.sql   # ref('aws_ecommerce', 'fct_customer_lifetime_value')
+│       └── mart_region_performance.sql  # ref('aws_ecommerce', 'fct_revenue_by_region')
+│
+├── finance/                     # Finance Analytics team — consumer
+│   ├── dbt_project.yml          # project: finance
+│   └── models/
+│       ├── fct_revenue_recognised.sql   # ref('aws_ecommerce', 'fct_orders')
+│       ├── fct_product_revenue.sql      # ref('aws_ecommerce', 'fct_product_performance')
+│       └── fct_geography_pnl.sql        # ref('aws_ecommerce', 'fct_revenue_by_region')
+│
+├── setup/                       # Redshift setup SQL + IAM guide
+├── kiro/                        # Kiro IDE config, MCP setup, LSP guide, Scene 3 prompts
+├── QUICKSTART.md                # Step-by-step: Redshift → dbt Cloud → mesh running
+└── DEMO_SCRIPT.md               # Full scene-by-scene talk track
 ```
+
+### Mesh access model
+
+| Layer | Access | Who can ref it |
+|---|---|---|
+| `staging/*` | `protected` | Only models in `aws_ecommerce` project |
+| `intermediate/*` | `protected` | Only models in `aws_ecommerce` project |
+| `marts/*` | `public` + contract enforced | Any project — `marketing`, `finance`, Bedrock |
+
+Consumers use **two-argument `ref()`**: `{{ ref('aws_ecommerce', 'fct_orders') }}`
 
 ---
 

@@ -24,15 +24,15 @@ models:
     staging:
       +schema: staging
       +materialized: view
+      +access: protected
     intermediate:
       +schema: intermediate
       +materialized: view
+      +access: protected
     marts:
       +schema: marts
       +materialized: table
-      customers:
-        +materialized: table
-      orders:
-        +materialized: table
-      products:
-        +materialized: table
+      +access: public
+      +persist_docs:
+        relation: true
+        columns: true

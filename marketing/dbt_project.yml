@@ -1,0 +1,22 @@
+name: 'marketing'
+version: '1.0.0'
+
+require-dbt-version: [">=1.9.0"]
+
+profile: 'marketing'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  marketing:
+    +schema: marketing
+    +materialized: table
+    +persist_docs:
+      relation: true
+      columns: true
