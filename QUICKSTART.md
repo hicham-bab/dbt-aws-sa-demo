@@ -189,6 +189,14 @@ Common IP sets by dbt Cloud region:
 > For a quick demo, allowing `0.0.0.0/0` on port 5439 rules out IP issues entirely.
 > Restrict to specific IPs before sharing with customers.
 
+### Pre-flight checklist before opening dbt Cloud
+
+Confirm all three of these are done in AWS before touching the dbt Cloud form — if any are missing the connection will fail:
+
+- [ ] Security group has inbound rules for all dbt Cloud IPs on port 5439
+- [ ] Workgroup **Publicly accessible** is **On** (Data access tab → Network and security → Edit)
+- [ ] You know your admin username and password from Step 1
+
 ### Create the connection in dbt Cloud
 
 1. In your dbt Cloud project: top nav → **Deploy** → **Connections** → **+ New connection**
@@ -203,19 +211,20 @@ Common IP sets by dbt Cloud region:
 | Port | `5439` | Always 5439 for Redshift |
 | OAuth method | `--` | Leave as default |
 
-4. **Critical:** Click **Optional settings** to expand it, then fill in:
+4. Scroll down and click **Optional settings** to expand it:
 
 | Field | Value | Notes |
 |---|---|---|
-| Database | `dev` | Required — the form will fail with "request was invalid" if this is blank |
+| **Database** | **`dev`** | **REQUIRED — do not leave blank** |
 
-> The Database field is inside **Optional settings** (collapsed by default) but it is
-> **not actually optional** — leaving it blank causes the "Create connection error: The request
-> was invalid" error even if hostname and port are correct.
+> **"Create connection error: The request was invalid"** with correct hostname/port means
+> the Database field is empty. It is inside Optional settings (collapsed by default)
+> but the form will not save without it. Fill in `dev` and try again.
 
-5. Username and password are set at the **developer credentials** level, not on the connection —
-   you'll do that after saving (see "Set your personal developer credentials" below)
-6. Click **Save**
+5. Click **Save**
+
+> Username and password are not set on the connection itself — they go in **Credentials**
+> under your profile settings after saving. See "Set your personal developer credentials" below.
 
 ### Create a development environment
 
