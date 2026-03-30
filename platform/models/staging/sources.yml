@@ -42,8 +42,9 @@ sources:
             tests:
               - not_null
               - relationships:
-                  to: source('raw', 'raw_customers')
-                  field: customer_id
+                  arguments:
+                    to: source('raw', 'raw_customers')
+                    field: customer_id
           - name: status
             description: "Order lifecycle status: pending | completed | returned | cancelled."
             tests:
