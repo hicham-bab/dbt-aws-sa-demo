@@ -82,22 +82,22 @@ Cross-project lineage visible in dbt Explorer. Fusion LSP active in Kiro / VS Co
 
 dbt Cloud connects to Redshift over the internet. You need to open port 5439 in the security group.
 
-**Finding the security group (Serverless):**
-1. Redshift console → **Serverless** (left nav) → **Workgroups** → click your workgroup
-2. Click the **Network and security** tab
-3. Under **VPC security groups**, click the `sg-...` link — this opens the EC2 console
+**Step 1 — Find your security group ID:**
+- Redshift console → **Serverless** → **Workgroups** → click your workgroup → **Network and security** tab
+- Note the security group ID shown under **VPC security groups** (e.g. `sg-defe99c4`)
 
-**Finding the security group (Provisioned):**
-1. Redshift console → **Clusters** → click your cluster
-2. **Properties** tab → **Network and security** → click the `sg-...` link
+> The "Edit network and security" page in Redshift only lets you change *which* security group
+> is attached — it does not let you edit the rules inside it. You need to go to EC2 for that.
 
-**Adding the rule (same for both):**
-1. In EC2, select your security group → click the **Inbound rules** tab → **Edit inbound rules**
-2. Click **Add rule**:
+**Step 2 — Edit the rules in EC2:**
+1. In the AWS top search bar, search for **EC2** and open it
+2. In the EC2 left nav → **Network & Security** → **Security Groups**
+3. Paste your security group ID (e.g. `sg-defe99c4`) in the search box → click on it
+4. Click the **Inbound rules** tab → **Edit inbound rules** → **Add rule**:
    - Type: `Custom TCP`
    - Port range: `5439`
    - Source: `Anywhere-IPv4` — this sets `0.0.0.0/0` automatically
-3. Click **Save rules**
+5. Click **Save rules**
 
 > `0.0.0.0/0` is fine for a demo. For production, restrict to the specific dbt Cloud IPs
 > shown on the connection form (Settings section) or listed at
