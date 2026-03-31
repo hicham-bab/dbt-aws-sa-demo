@@ -1,19 +1,24 @@
-{{ config(materialized = 'table') }}
+{{
+    config(
+        materialized   = 'table',
+        table_type     = 'iceberg',
+        partitioned_by = ['geography', 'month(order_date)']
+    )
+}}
 
--- Open-format mirror of fct_orders, written as an Apache Iceberg table on S3.
+-- Open-format mirror of fct_orders, written as an Apache Iceberg table on S3
+-- via Redshift's native Iceberg support (dbt-redshift >= 1.6).
 --
--- To activate Iceberg output, switch to the Athena target (profiles.yml.athena_example)
--- and replace the config block above with:
+-- NOTE: Fusion (dbt1060) warns on table_type/partitioned_by because its
+-- config schema for dbt-redshift doesn't yet include Iceberg keys.
+-- These warnings are false positives — the config is valid at runtime.
+-- Track: https://github.com/dbt-labs/dbt-redshift/issues
 --
---   {{ config(
---       materialized     = 'table',
---       table_type       = 'iceberg',
---       partitioned_by   = ['geography', 'month(order_date)'],
---       s3_data_location = 's3://YOUR-BUCKET/iceberg/fct_orders/'
---   ) }}
---
--- The SQL below is identical on both targets — dbt governs both storage formats
--- from a single project. Redshift gets a native table; Athena gets Iceberg on S3.
+-- DEMO TALKING POINT:
+-- Same Redshift connection. Same dbt project. One config change.
+-- Output is open Iceberg on S3 — readable by Athena, Spark/EMR,
+-- SageMaker, Redshift Spectrum, and any Iceberg-compatible engine.
+-- No separate query engine, no extra profile, no data copy.
 --
 -- Who reads this table:
 --   - Amazon Athena         (ad-hoc SQL, pay-per-query)

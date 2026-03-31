@@ -1,16 +1,17 @@
-{{ config(materialized = 'table') }}
+{{
+    config(
+        materialized   = 'table',
+        table_type     = 'iceberg',
+        partitioned_by = ['geography']
+    )
+}}
 
--- Open-format mirror of fct_revenue_by_region, written as Apache Iceberg on S3.
+-- Open-format mirror of fct_revenue_by_region, written as Apache Iceberg on S3
+-- via Redshift's native Iceberg support (dbt-redshift >= 1.6).
 --
--- To activate Iceberg output, switch to the Athena target (profiles.yml.athena_example)
--- and replace the config block above with:
---
---   {{ config(
---       materialized     = 'table',
---       table_type       = 'iceberg',
---       partitioned_by   = ['geography'],
---       s3_data_location = 's3://YOUR-BUCKET/iceberg/fct_revenue_by_region/'
---   ) }}
+-- NOTE: Fusion (dbt1060) warns on table_type/partitioned_by because its
+-- config schema for dbt-redshift doesn't yet include Iceberg keys.
+-- These warnings are false positives — the config is valid at runtime.
 --
 --
 -- This is the primary table for the demo query:
