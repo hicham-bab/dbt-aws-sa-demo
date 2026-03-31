@@ -1,0 +1,113 @@
+version: 2
+
+# ============================================================================
+# Iceberg models — open-format mirrors of the Redshift mart layer
+# ============================================================================
+# These models write Apache Iceberg tables to S3 via Athena.
+# The transformation SQL is identical to the Redshift marts.
+# The ONLY difference is the config block: table_type=iceberg + s3_data_location.
+#
+# Required dbt adapter: dbt-athena-community
+# Profile target: see platform/profiles.yml.athena_example
+# Run: dbt run --select tag:iceberg --target athena
+# ============================================================================
+
+models:
+  - name: fct_orders_iceberg
+    description: >
+      Open-format mirror of fct_orders written as Apache Iceberg on S3.
+      Partitioned by geography and order month for efficient AI query patterns.
+
+      Consumers: Amazon Athena (pay-per-query) · Redshift Spectrum (federated)
+      · SageMaker (training data) · Bedrock (Knowledge Base) · EMR Spark
+      · Any Iceberg-compatible engine (Flink, Trino, Snowflake external tables)
+
+      Same dbt lineage, tests, and contracts as the Redshift version.
+      dbt governs both formats from a single project.
+    config:
+      tags: ['iceberg', 'open_format']
+      access: public
+    columns:
+      - name: order_id
+        description: Unique order identifier.
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: Foreign key to dim_customers.
+        tests:
+          - not_null
+      - name: geography
+        description: AWS geography partition key — AMER | EMEA | APAC.
+        tests:
+          - not_null
+          - accepted_values:
+              values: [AMER, EMEA, APAC]
+      - name: order_date
+        description: UTC timestamp when the order was placed. Iceberg month partition key.
+        tests:
+          - not_null
+      - name: order_revenue
+        description: Total order revenue in USD (sum of line_total across all items).
+        tests:
+          - not_null
+
+  - name: fct_revenue_by_region_iceberg
+    description: >
+      Open-format mirror of fct_revenue_by_region written as Apache Iceberg on S3.
+      Partitioned by geography. Primary table for the demo query:
+      "What was total revenue from EMEA customers in Q1 2025?" → $68,299.60
+
+      Available to both the Redshift Semantic Layer path and the Athena
+      open lakehouse path — same answer, same governance, different storage.
+    config:
+      tags: ['iceberg', 'open_format']
+      access: public
+    columns:
+      - name: order_month
+        description: First day of the month — time grain for all aggregations.
+        tests:
+          - not_null
+      - name: geography
+        description: Iceberg partition key — AMER | EMEA | APAC.
+        tests:
+          - not_null
+      - name: total_revenue
+        description: Sum of completed order revenue in USD for this region and month.
+        tests:
+          - not_null
+
+  - name: fct_customer_lifetime_value_iceberg
+    description: >
+      Open-format mirror of fct_customer_lifetime_value written as Apache Iceberg on S3.
+      Partitioned by customer_tier so AI services can pull cohorts efficiently.
+
+      Key Iceberg advantage here: time travel.
+        SELECT * FROM fct_customer_lifetime_value_iceberg
+        FOR SYSTEM_TIME AS OF TIMESTAMP '2025-01-01 00:00:00'
+        WHERE ltv_segment = 'champion'
+      Reproduces the exact champion cohort from any point in time —
+      critical for reproducible ML training runs on SageMaker.
+    config:
+      tags: ['iceberg', 'open_format']
+      access: public
+    columns:
+      - name: customer_id
+        description: Unique customer identifier.
+        tests:
+          - not_null
+          - unique
+      - name: customer_tier
+        description: Iceberg partition key — starter | growth | enterprise.
+        tests:
+          - not_null
+      - name: ltv_segment
+        description: champion | loyal | potential | new
+        tests:
+          - not_null
+          - accepted_values:
+              values: [champion, loyal, potential, new]
+      - name: total_revenue
+        description: Lifetime revenue in USD from completed orders only.
+        tests:
+          - not_null

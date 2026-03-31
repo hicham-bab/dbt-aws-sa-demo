@@ -1,0 +1,39 @@
+# Athena profile for running dbt against Apache Iceberg tables on S3.
+# Adapter: dbt-athena-community  (pip install dbt-athena-community)
+#
+# Use this profile when running the Iceberg models:
+#   dbt run --select tag:iceberg --target athena
+#
+# The Redshift profile (profiles.yml.example) handles all other models.
+# Both profiles can coexist in ~/.dbt/profiles.yml — just change --target.
+
+aws_ecommerce:
+  outputs:
+
+    # -----------------------------------------------------------------------
+    # Athena target — writes Iceberg tables to S3
+    # -----------------------------------------------------------------------
+    athena:
+      type: athena
+      region_name: us-east-1                       # your AWS region
+
+      # S3 location for Athena query results (required by Athena)
+      s3_staging_dir: s3://YOUR-BUCKET/athena-results/
+
+      # Glue database where Iceberg tables are registered
+      database: aws_ecommerce_iceberg              # maps to Glue database name
+      schema: iceberg                              # Glue table prefix
+
+      # AWS auth — use IAM role in production (EC2/ECS/Lambda instance profile)
+      # For local dev, use a profile with s3:*, athena:*, glue:* permissions
+      aws_profile_name: default                    # or remove and use env vars:
+      # aws_access_key_id:  "{{ env_var('AWS_ACCESS_KEY_ID') }}"
+      # aws_secret_access_key: "{{ env_var('AWS_SECRET_ACCESS_KEY') }}"
+
+      # Iceberg-specific Athena settings
+      work_group: primary
+      threads: 4
+      num_retries: 3
+      lf_tags_database: null                       # Lake Formation tags (optional)
+
+  target: athena

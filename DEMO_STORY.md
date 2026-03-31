@@ -95,38 +95,81 @@
 
 ### SLIDE 5 — The Open Data Lakehouse Story (Iceberg)
 
-**Headline:** Open Data Infrastructure: same dbt, open table format
+**Headline:** One config line. Open format. Every AI tool reads it.
 
-**Two-column layout:**
+**Visual: side-by-side code diff**
 
-**Left — Managed Warehouse**
-```
-S3 → Glue → Redshift
-         ↓
-      dbt models
-         ↓
-    Bedrock / QS
-```
-- Proprietary Redshift tables
-- Native Redshift performance
-- Governed by dbt
+```diff
+  {{ config(
+      materialized = 'table',
+-     -- Redshift internal storage
++     table_type   = 'iceberg',
++     format       = 'parquet',
++     partitioned_by = ['geography', 'month(order_date)'],
++     s3_data_location = 's3://your-bucket/iceberg/fct_orders/'
+  ) }}
 
-**Right — Open Lakehouse**
+  -- SQL is identical. dbt lineage is identical. Tests are identical.
+  select ...
 ```
-S3 (Iceberg) → Athena / Redshift Spectrum
-                      ↓
-                 dbt models
-                      ↓
-              Any AI tool reads it
-```
-- Open Apache Iceberg format
-- Any query engine can read it
-- Same dbt governance
 
-**Pull quote:**
-> *"For customers moving toward an open data lakehouse on S3 with Iceberg —
-> dbt is the Context Layer there too. Same models, tests, lineage and docs,
-> but writing open table formats. The AI readiness story is identical."*
+> *"Same model. Same SQL. Same tests. Same lineage in dbt Explorer.
+> The only change is the config block — and now the data lives in open
+> Iceberg format on S3 that every engine on AWS can read."*
+
+---
+
+**Why Iceberg changes the AI story — 5 bullet points:**
+
+**1. Zero proprietary lock-in for AI consumers**
+Athena, Redshift Spectrum, SageMaker, EMR Spark, Flink, Trino, and even
+Snowflake external tables can all read the same Iceberg files on S3 —
+no export, no copy, no ETL between services. Your Bedrock agent and your
+Spark ML pipeline read the same atoms.
+
+**2. Time travel is built into the format**
+```sql
+SELECT * FROM fct_customer_lifetime_value_iceberg
+FOR SYSTEM_TIME AS OF TIMESTAMP '2025-01-01 00:00:00'
+WHERE ltv_segment = 'champion'
+```
+Reproduce the exact training dataset for any historical ML run — without
+snapshotting tables or keeping backup copies. Critical for model reproducibility
+and regulatory audit trails.
+
+**3. dbt governs it exactly like a warehouse table**
+Contracts, tests, column docs, and lineage all work identically.
+`contract: enforced: true` catches schema breaks whether you're on Redshift
+or Iceberg. There's no "ungoverned layer" just because you went open format.
+
+**4. Partition pruning = AI query cost control**
+`fct_orders_iceberg` is partitioned by `geography` and `month(order_date)`.
+An Athena query for EMEA Q1 2025 scans only that partition — not the full table.
+On pay-per-query services, this directly reduces what you pay every time
+a Bedrock agent or QuickSight Q question hits the data.
+
+**5. Schema evolution without breaking downstream AI**
+Add a column to an Iceberg table and Athena, Spark, and Bedrock see it
+immediately — no table drop-and-recreate, no breaking the Redshift view
+on top of it. dbt's contract layer tells you which consumers would be
+affected before you make the change.
+
+---
+
+**Two-column layout — warehouse vs. lakehouse:**
+
+| Managed Warehouse (Redshift) | Open Lakehouse (Iceberg on S3) |
+|------------------------------|-------------------------------|
+| Proprietary Redshift storage | Apache Iceberg Parquet on S3 |
+| Redshift-native performance | Athena pay-per-query / Spectrum |
+| dbt governed ✓ | dbt governed ✓ (same project) |
+| Semantic Layer ✓ | Same Semantic Layer ✓ |
+| Best for: always-on BI, sub-second queries | Best for: ML training, large-scale Spark, cross-engine access |
+
+**Pull quote (large text on slide):**
+> *"For customers on S3 with Iceberg — dbt is the Context Layer there too.
+> Same models, tests, lineage and docs. Open table format.
+> The AI readiness story is identical."*
 
 ---
 
