@@ -36,8 +36,4 @@ models:
       +persist_docs:
         relation: true
         columns: true
-    iceberg:
-      +schema: iceberg
-      +materialized: table
-      +access: public
-      +tags: ['iceberg', 'open_format']
+
