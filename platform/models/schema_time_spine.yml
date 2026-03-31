@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: time_spine_day
+    description: >
+      Daily time spine required by MetricFlow for the dbt Semantic Layer.
+      One row per calendar day covering a rolling window of 5 years back to
+      3 years forward. Required for all time-based metrics including
+      revenue_ytd, revenue_trailing_3m, and revenue_mom_growth.
+
+      Consumed by: Amazon Bedrock AgentCore, QuickSight Q, Kiro dbt MCP Server.
+    config:
+      schema: metrics
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        description: >
+          Calendar date — the base granularity column for MetricFlow.
+          Cast to date (no timestamp) as required by the Semantic Layer spec.
+        granularity: day

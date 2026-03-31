@@ -1,8 +1,29 @@
 version: 2
 
+# ============================================================================
+# dbt Semantic Layer — aws_ecommerce platform project
+# ============================================================================
+# Single source of truth for all business metrics consumed by:
+#   - Amazon Bedrock AgentCore  (text-to-SQL via dbt MCP Server)
+#   - Amazon QuickSight Q       (natural-language BI)
+#   - SageMaker feature pipelines (governed feature tables)
+#   - Kiro IDE                  (AI coding assistant with full project context)
+#   - dbt sl query / mf query   (CLI + API access)
+#
+# Spec: legacy (dbt Core 1.6–1.11 compatible)
+# Time spine: platform.metrics.time_spine_day
+# ============================================================================
+
 semantic_models:
+
+  # --------------------------------------------------------------------------
+  # ORDERS — fact grain, one row per order
+  # --------------------------------------------------------------------------
   - name: orders
-    description: Order fact grain — one row per completed order.
+    description: >
+      Order fact grain — one row per order. Primary semantic model for revenue,
+      order volume, and geographic metrics. AI-ready: consumed by Amazon Bedrock
+      text-to-SQL, QuickSight Q dashboards, and Kiro via the dbt MCP Server.
     model: ref('fct_orders')
     defaults:
       agg_time_dimension: order_date
@@ -20,6 +41,11 @@ semantic_models:
         type: time
         type_params:
           time_granularity: day
+      - name: order_month
+        type: time
+        expr: order_month
+        type_params:
+          time_granularity: month
       - name: geography
         type: categorical
       - name: aws_region
@@ -27,6 +53,8 @@ semantic_models:
       - name: customer_tier
         type: categorical
       - name: status
+        type: categorical
+      - name: is_completed
         type: categorical
 
     measures:
@@ -43,9 +71,17 @@ semantic_models:
         agg: average
         expr: order_revenue
 
+  # --------------------------------------------------------------------------
+  # CUSTOMERS — CLV grain, one row per customer
+  # --------------------------------------------------------------------------
   - name: customers
-    description: Customer CLV grain — one row per customer.
+    description: >
+      Customer CLV grain — one row per customer. Primary semantic model for
+      customer segmentation and lifetime value metrics. AI-ready: consumed by
+      Amazon Bedrock for CLV queries and Kiro for customer analytics prompts.
     model: ref('fct_customer_lifetime_value')
+    defaults:
+      agg_time_dimension: customer_since
 
     entities:
       - name: customer
@@ -53,6 +89,10 @@ semantic_models:
         expr: customer_id
 
     dimensions:
+      - name: customer_since
+        type: time
+        type_params:
+          time_granularity: day
       - name: geography
         type: categorical
       - name: aws_region
@@ -60,32 +100,87 @@ semantic_models:
       - name: customer_tier
         type: categorical
       - name: ltv_segment
+        description: champion | loyal | potential | new
         type: categorical
-      - name: customer_since
-        type: time
-        type_params:
-          time_granularity: day
 
     measures:
       - name: customer_count
-        description: Number of customers.
+        description: Number of distinct customers.
         agg: count_distinct
         expr: customer_id
       - name: total_customer_revenue
-        description: Sum of lifetime revenue across all customers.
+        description: Sum of lifetime revenue across all customers in USD.
         agg: sum
         expr: total_revenue
       - name: avg_ltv
-        description: Average lifetime value per customer.
+        description: Average customer lifetime value in USD.
         agg: average
         expr: total_revenue
 
+  # --------------------------------------------------------------------------
+  # PRODUCTS — performance snapshot, one row per product
+  # Note: fct_product_performance is an all-time summary without a date column.
+  # snapshot_date (current_date) satisfies MetricFlow's agg_time_dimension
+  # requirement. For time-series product analytics, a fct_product_monthly_revenue
+  # model would be needed.
+  # --------------------------------------------------------------------------
+  - name: products
+    description: >
+      Product performance snapshot — one row per product. Exposes all-time
+      revenue, units sold, and category dimensions. AI-ready: consumed by
+      Amazon Bedrock for catalog and category queries, and Kiro for product
+      performance prompts.
+    model: ref('fct_product_performance')
+    defaults:
+      agg_time_dimension: snapshot_date
+
+    entities:
+      - name: product
+        type: primary
+        expr: product_id
+
+    dimensions:
+      - name: snapshot_date
+        description: Synthetic time anchor (current_date) for MetricFlow compatibility.
+        type: time
+        expr: current_date
+        type_params:
+          time_granularity: day
+      - name: category_name
+        type: categorical
+      - name: product_name
+        type: categorical
+      - name: sku
+        type: categorical
+
+    measures:
+      - name: product_revenue
+        description: All-time revenue attributed to this product in USD.
+        agg: sum
+        expr: total_revenue
+      - name: units_sold
+        description: All-time units sold.
+        agg: sum
+        expr: total_units_sold
+      - name: product_order_count
+        description: All-time number of orders containing this product.
+        agg: sum
+        expr: total_orders
+
+
+# ============================================================================
+# METRICS
+# ============================================================================
+
 metrics:
+
+  # --- Core revenue -----------------------------------------------------------
+
   - name: total_revenue
     description: >
-      Total USD revenue from completed orders. The canonical revenue metric used
-      across all dashboards, Bedrock agents, and SageMaker feature pipelines.
-      Excludes returned and cancelled orders.
+      Total USD revenue from completed orders. The canonical revenue metric
+      across all dashboards, Amazon Bedrock agents, QuickSight Q, and SageMaker
+      feature pipelines. Excludes returned and cancelled orders.
     label: Total Revenue (USD)
     type: simple
     type_params:
@@ -104,7 +199,7 @@ metrics:
         fill_nulls_with: 0
 
   - name: avg_order_value
-    description: Average revenue per completed order (USD).
+    description: Average revenue per completed order in USD.
     label: Avg Order Value (USD)
     type: simple
     type_params:
@@ -112,7 +207,9 @@ metrics:
         name: avg_order_value
 
   - name: revenue_per_customer
-    description: Total revenue divided by unique customer count — a key growth KPI.
+    description: >
+      Total revenue divided by unique customer count. Key growth KPI surfaced
+      in Bedrock executive briefings and QuickSight leadership dashboards.
     label: Revenue per Customer (USD)
     type: ratio
     type_params:
@@ -121,11 +218,196 @@ metrics:
       denominator:
         name: customer_count
 
+  # --- Customer ---------------------------------------------------------------
+
   - name: active_customers
-    description: Customers with at least one completed order.
+    description: >
+      Customers with at least one completed order. Used by Amazon Bedrock agents
+      and QuickSight dashboards for engagement and activation reporting.
     label: Active Customers
     type: simple
     type_params:
       measure:
         name: customer_count
         fill_nulls_with: 0
+
+  - name: avg_ltv
+    description: >
+      Average customer lifetime value in USD across all segments. AI-ready:
+      used by Bedrock CLV agents and SageMaker churn models.
+    label: Avg Customer LTV (USD)
+    type: simple
+    type_params:
+      measure:
+        name: avg_ltv
+
+  # --- Product ----------------------------------------------------------------
+
+  - name: product_revenue
+    description: >
+      All-time revenue by product or category (snapshot grain). AI-ready: used
+      by Bedrock for product catalog queries and SageMaker recommendation pipelines.
+    label: Product Revenue (USD)
+    type: simple
+    type_params:
+      measure:
+        name: product_revenue
+        fill_nulls_with: 0
+
+  - name: units_sold
+    description: All-time units sold by product or category.
+    label: Units Sold
+    type: simple
+    type_params:
+      measure:
+        name: units_sold
+        fill_nulls_with: 0
+
+  # --- Time-based (require time_spine_day) ------------------------------------
+
+  - name: revenue_ytd
+    description: >
+      Year-to-date cumulative revenue. Resets at the start of each calendar year.
+      Available for QuickSight YTD scorecards and Bedrock annual performance
+      briefings. Requires time_spine_day.
+    label: Revenue YTD (USD)
+    type: cumulative
+    type_params:
+      measure:
+        name: total_revenue
+      cumulative_type_params:
+        grain_to_date: year
+
+  - name: revenue_trailing_3m
+    description: >
+      Trailing 3-month cumulative revenue. Smooths seasonal spikes and feeds
+      SageMaker feature pipelines for churn prediction. Requires time_spine_day.
+    label: Revenue (Trailing 3M, USD)
+    type: cumulative
+    type_params:
+      measure:
+        name: total_revenue
+      cumulative_type_params:
+        window: 3 months
+
+  - name: revenue_mom_growth
+    description: >
+      Month-over-month revenue growth percentage. Surfaced in QuickSight executive
+      dashboards and Bedrock monthly business review summaries. Requires time_spine_day.
+    label: Revenue MoM Growth %
+    type: derived
+    type_params:
+      expr: (total_revenue - total_revenue_prev_month) * 100 / nullif(total_revenue_prev_month, 0)
+      metrics:
+        - name: total_revenue
+        - name: total_revenue
+          offset_window: 1 month
+          alias: total_revenue_prev_month
+
+
+# ============================================================================
+# SAVED QUERIES
+# Pre-built, AI-ready query definitions for Kiro, Amazon Bedrock AgentCore,
+# and QuickSight Q. Each saved query is a governed, reusable entry point so
+# AI tools never guess metric definitions or grouping logic.
+#
+# Run locally:
+#   dbt sl query --saved-query <name>     (dbt Cloud CLI / Fusion)
+#   mf query --saved-query <name>         (MetricFlow CLI)
+# ============================================================================
+
+saved_queries:
+
+  - name: revenue_by_geography
+    description: >
+      Monthly revenue, order volume, and average order value by AWS geography
+      (AMER, EMEA, APAC).
+
+      AI-ready entry points:
+        Bedrock:    "What was total revenue by geography in Q1 2025?"
+        QuickSight: Geographic revenue heatmap
+        Kiro:       "Show me revenue trends by region"
+
+      Expected demo answer — EMEA Q1 2025: $68,299.60
+    label: Revenue by Geography (Monthly)
+    query_params:
+      metrics:
+        - total_revenue
+        - order_count
+        - avg_order_value
+      group_by:
+        - "TimeDimension('order__order_date', 'month')"
+        - "Dimension('order__geography')"
+
+  - name: customer_segment_performance
+    description: >
+      Revenue, active customers, average LTV, and revenue-per-customer sliced
+      by LTV segment (champion, loyal, potential, new).
+
+      AI-ready entry points:
+        Bedrock:    "Which customer segment drives the most revenue?"
+        SageMaker:  Segment-level features for churn and upsell models
+        Kiro:       "Show me performance by customer segment"
+    label: Customer Segment Performance
+    query_params:
+      metrics:
+        - total_revenue
+        - active_customers
+        - avg_ltv
+        - revenue_per_customer
+      group_by:
+        - "Dimension('customer__ltv_segment')"
+
+  - name: product_category_revenue
+    description: >
+      All-time revenue and units sold by product category.
+
+      AI-ready entry points:
+        Bedrock:    "Which product category generates the most revenue?"
+        SageMaker:  Product affinity and recommendation features
+        Kiro:       "Show me top categories by revenue"
+    label: Product Category Revenue
+    query_params:
+      metrics:
+        - product_revenue
+        - units_sold
+      group_by:
+        - "Dimension('product__category_name')"
+
+  - name: regional_customer_growth
+    description: >
+      Customer acquisition trends by AWS geography over time, grouped by month
+      of first order.
+
+      AI-ready entry points:
+        Bedrock:    "How has customer growth trended in EMEA vs AMER?"
+        QuickSight: Regional expansion dashboard
+        Kiro:       "Show me customer growth by geography"
+    label: Regional Customer Growth
+    query_params:
+      metrics:
+        - active_customers
+        - customer_count
+      group_by:
+        - "Dimension('customer__geography')"
+        - "TimeDimension('customer__customer_since', 'month')"
+
+  - name: executive_kpis
+    description: >
+      Single-row executive KPI snapshot: total revenue, orders placed, average
+      order value, active customers, revenue per customer, and YTD revenue.
+      No time or geography grouping.
+
+      AI-ready entry points:
+        Bedrock:    "Give me a summary of overall business performance"
+        QuickSight: Executive scorecard / C-suite dashboard
+        Kiro:       "What are our top-line KPIs?"
+    label: Executive KPI Snapshot
+    query_params:
+      metrics:
+        - total_revenue
+        - order_count
+        - avg_order_value
+        - active_customers
+        - revenue_per_customer
+        - revenue_ytd

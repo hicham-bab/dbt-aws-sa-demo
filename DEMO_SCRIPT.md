@@ -1,6 +1,6 @@
 # Demo Script — dbt Platform on AWS
 **Audience:** AWS Solutions Architects
-**Total time:** ~22 minutes + Q&A
+**Total time:** ~25 minutes + Q&A
 
 ---
 
@@ -142,68 +142,130 @@ Generate a model that summarises total revenue by AWS region and month.
 
 ---
 
-## Scene 4 — dbt → Amazon Bedrock (6 min)
+## Scene 4 — dbt Semantic Layer + AI Consumers (8 min)
 
-### Step 1 — Show the clean mart in Redshift
+### Step 1 — Show the Semantic Layer definition
 
-Open **Redshift Query Editor v2** (or dbt Explorer).
+Open `platform/semantic_models/metrics.yml` in the IDE.
 
-Run:
-```sql
-SELECT geography, SUM(total_revenue) as revenue
-FROM marts.fct_revenue_by_region
-WHERE order_month BETWEEN '2025-01-01' AND '2025-03-31'
-GROUP BY 1
-ORDER BY 2 DESC;
+> "This is the dbt Semantic Layer. Every metric your AI tools will ever query
+> is defined here — once. `total_revenue` excludes returned and cancelled orders.
+> `revenue_ytd` resets at the start of each year. `revenue_mom_growth` computes
+> period-over-period using a time spine dbt manages automatically.
+>
+> One file. One definition. Zero discrepancy between Bedrock, QuickSight,
+> SageMaker, and Kiro."
+
+Point at the `saved_queries` section:
+
+> "Saved queries are pre-built, governed entry points for AI tools. Instead of
+> letting every agent write its own SQL, you define the canonical questions here.
+> Bedrock asks for `executive_kpis` and gets the same answer as QuickSight.
+> Always."
+
+### Step 2 — Run the executive KPI saved query from Kiro
+
+Switch to Kiro chat. Type:
+```
+Run the executive_kpis saved query and show me the results.
 ```
 
-> "This table went through dbt. It's tested, documented, and trusted.
-> The EMEA number you see here is the same number every team, every tool,
-> and every AI agent will get — because the definition lives in one place."
-
-### Step 2 — Demo Bedrock query via Semantic Layer
-
-**Option A — Semantic Layer text-to-SQL:**
-
-Show a Bedrock Agent prompt (or type in dbt Cloud IDE terminal):
+Kiro executes:
 ```bash
-dbt sl query \
-  --metrics total_revenue \
-  --group-by geography,order_date__month \
-  --where "geography = 'EMEA' AND order_date__month BETWEEN '2025-01-01' AND '2025-03-31'"
+dbt sl query --saved-query executive_kpis
 ```
 
-> "What was total revenue from EMEA customers in Q1 2025?"
+Single-row KPI snapshot: total revenue, orders, AOV, active customers,
+revenue per customer, YTD revenue.
+
+> "A Bedrock daily briefing agent can call this every morning and narrate
+> the numbers — and they are always governed, always current, always the
+> same definition every other dashboard uses."
+
+### Step 3 — EMEA revenue question (the $68K moment)
+
+Ask Kiro:
+```
+What was total revenue from EMEA customers in Q1 2025?
+```
+
+Kiro calls the `revenue_by_geography` saved query with EMEA filter.
 
 Expected answer: **$68,299.60**
 
-> "The metric definition lives in dbt. Bedrock never guesses what 'revenue' means —
-> it asks dbt. That's why you can trust the answer."
+> "That answer is auditable. Trace it from this response back to
+> fct_revenue_by_region → int_orders_enriched → the raw Kinesis stream in S3.
+> Lineage-backed AI. That's what 'AI-ready data' actually means."
 
-**Option B — RAG on dbt-prepared mart (simpler):**
+### Step 4 — Customer segment breakdown
 
-Show a Knowledge Base built on `fct_customer_lifetime_value`. Ask:
-> "Who are our top 5 customers by lifetime value, and which AWS regions are they in?"
+Ask Kiro:
+```
+Which customer segment drives the most revenue?
+Show revenue and average LTV per segment.
+```
 
-> "The answer is only trustworthy because the data underneath it went through dbt."
+Kiro runs `customer_segment_performance` saved query.
 
-### Step 3 — Optional: show the dbt MCP Server connected to Bedrock AgentCore
+> "The platform team owns the revenue definition. The marketing team owns the
+> segmentation. Both are exposed through one Semantic Layer — so Bedrock and
+> Kiro get a coherent, cross-team answer."
 
-> "For teams building agents — the same dbt MCP Server we just used with Kiro
-> can be connected to Bedrock AgentCore. Your agents get full project context:
-> model lineage, metric definitions, column documentation — all structured, all current."
+### Step 5 — QuickSight Q integration callout
+
+> "For customers already on QuickSight — the same Semantic Layer connects
+> directly. `total_revenue` in a Kiro prompt and `total_revenue` in a
+> QuickSight Q question resolve to identical SQL against the same Redshift table.
+> No BI-team interpretation step. No 'which revenue number did you use?'"
+
+### Step 6 — Bedrock AgentCore connection
+
+> "For teams building agents at scale — the dbt MCP Server we just used with
+> Kiro connects directly to Bedrock AgentCore. Your agents get full project
+> context: model lineage, metric definitions, column docs, saved queries —
+> all structured, governed, and current."
 
 ---
 
-## Scene 5 — Wrap (2 min)
+## Scene 5 — dbt + AWS: Native at Every Layer (1.5 min)
 
-Return to the architecture slide:
+**What's on screen:** Build this diagram layer by layer:
 
 ```
-S3  →  Glue  →  Redshift  →  dbt  →  Bedrock / SageMaker
+┌──────────────────────────────────────────────────────────────────┐
+│  COMPUTE       Redshift · Athena · RDS/Aurora · Glue/EMR         │
+│                SageMaker Lakehouse                                │
+│                                                                   │
+│  OPEN DATA     Apache Iceberg on S3                               │
+│                dbt writes Iceberg tables natively via Athena      │
+│                or Redshift — open format, any AI tool consumes it │
+│                                                                   │
+│  MARKETPLACE   dbt Platform on AWS Marketplace                    │
+│                                                                   │
+│  ORCHESTRATION Native scheduler · MWAA (Airflow) · Step Functions │
+│                                                                   │
+│  AI / BI       Bedrock AgentCore · QuickSight Q · SageMaker       │
+│                                                                   │
+│  DEVELOPER     Kiro IDE + dbt MCP Server                          │
+└──────────────────────────────────────────────────────────────────┘
                               ↑
-                         trust & context layer
+               dbt — the Context Layer across all of it
 ```
+
+> "Wherever your customers are on AWS — managed warehouse, open lakehouse,
+> or both — dbt plugs in natively."
+
+**Iceberg talking point** *(use when the customer mentions open lakehouse / S3)*:
+
+> "For customers moving toward an open data lakehouse on S3 with Apache Iceberg —
+> dbt is the Context Layer there too. Same models, tests, lineage, and docs,
+> but writing open Iceberg table formats via Athena or Redshift instead of
+> proprietary warehouse tables. The AI readiness story is identical: governed,
+> tested, lineage-tracked data — open format, any AI tool can consume it."
+
+---
+
+## Scene 6 — Wrap (1 min)
 
 Three closing lines:
 
@@ -211,7 +273,7 @@ Three closing lines:
 >    their AI is operating on data nobody can explain or audit."
 
 2. > "dbt is on AWS Marketplace — your customers can start today, in the account
->    they already have, billing against existing AWS spend."
+>    they already have, billing against existing AWS committed spend."
 
 3. > "The data your AI touches went through dbt. That's why you can trust the answer."
 
@@ -236,11 +298,27 @@ Hand off to Q&A.
 > Yes. dbt supports Athena (S3 via Glue Catalog), RDS PostgreSQL, Aurora,
 > and Glue Iceberg tables. If the data is in a SQL-queryable AWS service, dbt can transform it.
 
+**Q: Does dbt work with Apache Iceberg on S3?**
+> Yes. dbt writes Iceberg tables natively via Athena or Redshift Spectrum.
+> Same models, tests, lineage, and Semantic Layer — but writing open Iceberg
+> format instead of proprietary tables. Every AI tool consumes the same
+> governed metrics regardless of the underlying table format.
+
 **Q: How does the dbt Semantic Layer connect to Bedrock?**
 > Via JDBC or the Semantic Layer API. You define your metrics in dbt once,
 > and any MCP-compatible tool — including Bedrock AgentCore — can query them
 > in natural language. dbt translates the question to SQL, Redshift executes it,
 > and Bedrock gets a governed, consistent answer.
+
+**Q: How does the dbt Semantic Layer connect to QuickSight?**
+> Via the dbt Semantic Layer JDBC driver or the Semantic Layer API.
+> QuickSight Q questions resolve against the same metric definitions as
+> Bedrock and Kiro — one definition, many consumers.
+
+**Q: What is the dbt MCP Server and how does it connect to Kiro?**
+> The dbt MCP Server exposes your entire dbt project — models, metrics, lineage,
+> column docs — as structured tools an AI agent can call. Kiro connects via the
+> MCP protocol. See `kiro/quickstart-kiro-mcp.md` for a 5-minute setup guide.
 
 **Q: Is dbt open source?**
 > dbt Core is fully open source (Apache 2.0). dbt Cloud (the platform with IDE,
