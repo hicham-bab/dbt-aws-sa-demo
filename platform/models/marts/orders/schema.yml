@@ -15,7 +15,7 @@ models:
     columns:
       - name: order_id
         description: Surrogate primary key.
-        data_type: integer
+        data_type: bigint
         constraints:
           - type: not_null
           - type: primary_key
@@ -24,7 +24,7 @@ models:
           - unique
       - name: customer_id
         description: FK to dim_customers.customer_id.
-        data_type: integer
+        data_type: bigint
       - name: customer_name
         data_type: varchar
       - name: company
@@ -52,10 +52,10 @@ models:
         data_type: timestamp
       - name: item_count
         description: Number of distinct line items on the order.
-        data_type: integer
+        data_type: bigint
       - name: total_units
         description: Total units ordered across all line items.
-        data_type: integer
+        data_type: bigint
       - name: order_revenue
         description: Total order revenue in USD (sum of line_total).
         data_type: decimal(12,2)
@@ -93,10 +93,10 @@ models:
         data_type: varchar
       - name: unique_customers
         description: Distinct customers with a completed order this month.
-        data_type: integer
+        data_type: bigint
       - name: total_orders
         description: Count of completed orders this month.
-        data_type: integer
+        data_type: bigint
       - name: total_revenue
         description: Sum of all completed order revenue in USD for this region/month.
         data_type: decimal(12,2)

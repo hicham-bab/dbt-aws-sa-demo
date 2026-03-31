@@ -14,7 +14,7 @@ models:
     columns:
       - name: customer_id
         description: Surrogate primary key.
-        data_type: integer
+        data_type: bigint
         constraints:
           - type: not_null
           - type: primary_key
@@ -80,7 +80,7 @@ models:
     columns:
       - name: customer_id
         description: Surrogate primary key.
-        data_type: integer
+        data_type: bigint
         constraints:
           - type: not_null
           - type: primary_key
@@ -108,7 +108,7 @@ models:
         data_type: timestamp
       - name: total_orders
         description: Number of completed orders placed by this customer.
-        data_type: integer
+        data_type: bigint
       - name: total_revenue
         description: Total USD revenue from all completed orders. Excludes returned/cancelled.
         data_type: decimal(12,2)
@@ -125,7 +125,7 @@ models:
         data_type: timestamp
       - name: order_tenure_days
         description: Days between first and last completed order.
-        data_type: integer
+        data_type: bigint
       - name: ltv_score
         description: Recency-weighted LTV score (total_revenue x 1.2 if ordered in last 90 days).
         data_type: decimal(12,2)

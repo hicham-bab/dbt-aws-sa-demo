@@ -14,7 +14,7 @@ models:
     columns:
       - name: product_id
         description: Surrogate primary key.
-        data_type: integer
+        data_type: bigint
         constraints:
           - type: not_null
           - type: primary_key
@@ -31,7 +31,7 @@ models:
           - not_null
           - unique
       - name: category_id
-        data_type: integer
+        data_type: bigint
       - name: category_name
         data_type: varchar
       - name: list_price
@@ -55,7 +55,7 @@ models:
     columns:
       - name: product_id
         description: Surrogate primary key.
-        data_type: integer
+        data_type: bigint
         constraints:
           - type: not_null
           - type: primary_key
@@ -74,10 +74,10 @@ models:
         data_type: boolean
       - name: total_orders
         description: Count of completed orders containing this product.
-        data_type: integer
+        data_type: bigint
       - name: total_units_sold
         description: Sum of quantity across all completed orders for this product.
-        data_type: integer
+        data_type: bigint
       - name: total_revenue
         description: Sum of line_total across all completed orders for this product.
         data_type: decimal(12,2)

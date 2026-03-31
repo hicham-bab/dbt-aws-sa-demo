@@ -9,7 +9,7 @@ renamed as (
         category_id,
         cast(price as decimal(10, 2))                           as list_price,
         sku,
-        case when lower(is_active) = 'true' then true else false end as is_active
+        is_active
     from source
 )
 
