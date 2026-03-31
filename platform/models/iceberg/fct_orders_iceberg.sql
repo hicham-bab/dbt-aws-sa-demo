@@ -2,7 +2,6 @@
     config(
         materialized   = 'table',
         table_type     = 'iceberg',
-        format         = 'parquet',
         partitioned_by = ['geography', 'month(order_date)'],
         s3_data_location = 's3://{{ var("iceberg_bucket") }}/iceberg/fct_orders/'
     )
