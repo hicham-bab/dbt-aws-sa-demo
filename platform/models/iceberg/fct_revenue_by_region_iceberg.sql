@@ -1,13 +1,17 @@
-{{
-    config(
-        materialized   = 'table',
-        table_type     = 'iceberg',
-        partitioned_by = ['geography'],
-        s3_data_location = 's3://{{ var("iceberg_bucket") }}/iceberg/fct_revenue_by_region/'
-    )
-}}
+{{ config(materialized = 'table') }}
 
 -- Open-format mirror of fct_revenue_by_region, written as Apache Iceberg on S3.
+--
+-- To activate Iceberg output, switch to the Athena target (profiles.yml.athena_example)
+-- and replace the config block above with:
+--
+--   {{ config(
+--       materialized     = 'table',
+--       table_type       = 'iceberg',
+--       partitioned_by   = ['geography'],
+--       s3_data_location = 's3://YOUR-BUCKET/iceberg/fct_revenue_by_region/'
+--   ) }}
+--
 --
 -- This is the primary table for the demo query:
 --   "What was total revenue from EMEA customers in Q1 2025?" → $68,299.60

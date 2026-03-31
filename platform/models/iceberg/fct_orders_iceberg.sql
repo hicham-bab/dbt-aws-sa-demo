@@ -1,17 +1,19 @@
-{{
-    config(
-        materialized   = 'table',
-        table_type     = 'iceberg',
-        partitioned_by = ['geography', 'month(order_date)'],
-        s3_data_location = 's3://{{ var("iceberg_bucket") }}/iceberg/fct_orders/'
-    )
-}}
+{{ config(materialized = 'table') }}
 
 -- Open-format mirror of fct_orders, written as an Apache Iceberg table on S3.
 --
--- Identical transformation logic to the Redshift mart (fct_orders).
--- The only difference is the config block above — dbt writes Parquet+Iceberg
--- to S3 via Athena instead of Redshift internal storage.
+-- To activate Iceberg output, switch to the Athena target (profiles.yml.athena_example)
+-- and replace the config block above with:
+--
+--   {{ config(
+--       materialized     = 'table',
+--       table_type       = 'iceberg',
+--       partitioned_by   = ['geography', 'month(order_date)'],
+--       s3_data_location = 's3://YOUR-BUCKET/iceberg/fct_orders/'
+--   ) }}
+--
+-- The SQL below is identical on both targets — dbt governs both storage formats
+-- from a single project. Redshift gets a native table; Athena gets Iceberg on S3.
 --
 -- Who reads this table:
 --   - Amazon Athena         (ad-hoc SQL, pay-per-query)

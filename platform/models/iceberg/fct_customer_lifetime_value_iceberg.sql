@@ -1,13 +1,17 @@
-{{
-    config(
-        materialized   = 'table',
-        table_type     = 'iceberg',
-        partitioned_by = ['customer_tier'],
-        s3_data_location = 's3://{{ var("iceberg_bucket") }}/iceberg/fct_customer_lifetime_value/'
-    )
-}}
+{{ config(materialized = 'table') }}
 
 -- Open-format mirror of fct_customer_lifetime_value, written as Apache Iceberg on S3.
+--
+-- To activate Iceberg output, switch to the Athena target (profiles.yml.athena_example)
+-- and replace the config block above with:
+--
+--   {{ config(
+--       materialized     = 'table',
+--       table_type       = 'iceberg',
+--       partitioned_by   = ['customer_tier'],
+--       s3_data_location = 's3://YOUR-BUCKET/iceberg/fct_customer_lifetime_value/'
+--   ) }}
+--
 --
 -- Partitioned by customer_tier so SageMaker and Bedrock can efficiently
 -- pull champion / loyal / potential / new cohorts without full table scans.
