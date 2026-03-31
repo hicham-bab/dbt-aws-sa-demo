@@ -1,9 +1,9 @@
-name: 'marketing'
+name: 'marketing_aws'
 version: '1.0.0'
 
 require-dbt-version: [">=1.9.0"]
 
-profile: 'marketing'
+profile: 'marketing_aws'
 
 model-paths: ["models"]
 test-paths: ["tests"]
@@ -14,8 +14,8 @@ clean-targets:
   - "dbt_packages"
 
 models:
-  marketing:
-    +schema: marketing
+  marketing_aws:
+    +schema: marketing_aws
     +materialized: table
     +persist_docs:
       relation: true
