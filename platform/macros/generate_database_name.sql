@@ -1,8 +1,8 @@
 {% macro generate_database_name(custom_database_name=none, node=none) -%}
-    {#-
-        Redshift does not support 3-part identifiers (database.schema.table)
-        when referencing tables in the current database. Returning none causes
-        dbt to generate schema.table references only, which Redshift requires.
-    -#}
-    {{ return(none) }}
+    {#- Return the real database so get_relation() can look up the relation. -#}
+    {%- if custom_database_name is none -%}
+        {{ target.database }}
+    {%- else -%}
+        {{ custom_database_name | trim }}
+    {%- endif -%}
 {%- endmacro %}
