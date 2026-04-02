@@ -9,7 +9,6 @@ model-paths: ["models"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
-semantic-model-paths: ["semantic_models"]
 
 target-path: "target"
 clean-targets:
